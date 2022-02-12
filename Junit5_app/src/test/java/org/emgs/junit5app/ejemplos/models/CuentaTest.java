@@ -4,16 +4,22 @@ package org.emgs.junit5app.ejemplos.models;
 import org.emgs.junit5app.ejemplos.exceptions.DineroInsuficienteException;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.condition.*;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.*;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.*;
 
 class CuentaTest {
     Cuenta cuenta;
+
     @BeforeEach //antes de iniciar un metodo se ejecuta este
     void initMetodoTest(){
         System.out.println("Iniciando metodo");
@@ -291,7 +297,76 @@ class CuentaTest {
         assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO) > 0 ); //misma validacion
     }
 
+    @RepeatedTest(value=5,name="Repetición no {currentRepetition} de {totalRepetitions}" )
+    void testDebitoCuentaRepetido() {
+        cuenta.debito(new BigDecimal("100"));
+        assertNotNull(cuenta.getSaldo());
+        assertEquals(900,cuenta.getSaldo().intValue());
+        assertEquals("900.12345", cuenta.getSaldo().toPlainString());
+    }
 
+    @Nested
+    class PruebasParametrizadasTest{
 
+        @ParameterizedTest(name="num {index} ejecutando con valor {0} - {argumentsWithNames}") //validar muchos saldos mayor a 0
+        @ValueSource(strings = {"100","200","500","700","1000","1000.12345"})
+        void testDebitoCuenta(String monto) { //aqui se inyecta cada valor de valueSource
+            cuenta.debito(new BigDecimal(monto));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO)>0);
+        }
 
+        @ParameterizedTest(name="num {index} ejecutando con valor {0} - {argumentsWithNames}") //validar muchos saldos mayor a 0
+        @CsvSource({"1,100","2,200","3,500","4,700","5,1000","6,1000.12345"})
+        void testDebitoCuentaCSVSource(String index, String monto) { //aqui se inyecta cada valor de valueSource
+            System.out.println(index+" -> "+monto);
+            cuenta.debito(new BigDecimal(monto));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO)>0);
+        }
+
+        @ParameterizedTest(name="num {index} ejecutando con valor {0} - {argumentsWithNames}") //validar muchos saldos mayor a 0 agregando saldo y monto a retirar
+        @CsvSource({"200,100,John,Eduardo","250,200,Manuel,Manuel","499,500,Jose,jose","750,700,javier,felipe","1000,1000,Lucas,Luca","1000.12345,1000,Ana,Ana"})
+        void testDebitoCuentaCSVSource2(String saldo, String monto, String esperado, String actual) { //aqui se inyecta cada valor de valueSource
+            cuenta.setSaldo(new BigDecimal(saldo));
+            cuenta.debito(new BigDecimal(monto));
+            cuenta.setPersona(actual);
+            assertNotNull(cuenta.getSaldo());
+            assertNotNull(cuenta.getPersona());
+            assertEquals(esperado,actual);
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO)>0);
+        }
+
+        @ParameterizedTest(name="num {index} ejecutando con valor {0} - {argumentsWithNames}") //validar muchos saldos mayor a 0
+        @CsvFileSource(resources = "/data.csv ") //debe estar creado en la carpeta resources este archivo
+        void testDebitoCuentaCSVFileSource(String monto) { //aqui se inyecta cada valor del csv
+            cuenta.debito(new BigDecimal(monto));
+            assertNotNull(cuenta.getSaldo());
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO)>0);
+        }
+
+        @ParameterizedTest(name="num {index} ejecutando con valor {0} - {argumentsWithNames}") //validar muchos saldos mayor a 0
+        @CsvFileSource(resources = "/data2.csv ") //debe estar creado en la carpeta resources este archivo
+        void testDebitoCuentaCSVFileSource2(String saldo, String monto, String esperado, String actual) { //aqui se inyecta cada valor del csv
+            cuenta.setSaldo(new BigDecimal(saldo));
+            cuenta.debito(new BigDecimal(monto));
+            cuenta.setPersona(actual);
+            assertNotNull(cuenta.getSaldo());
+            assertNotNull(cuenta.getPersona());
+            assertEquals(esperado,actual);
+            assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO)>0);
+        }
+    }
+    //este metodo no puede integrarse en la clase pruebasparametrizadastest ya que la fuente es un metodo estatico y debe estar en la clase raiz
+    @ParameterizedTest(name="num {index} ejecutando con valor {0} - {argumentsWithNames}") //validar muchos saldos mayor a 0
+    @MethodSource("montoList") //unicamente el nombre del metodo
+    void testDebitoCuentaMethodSource(String monto) { //aqui se inyecta cada valor del csv
+        cuenta.debito(new BigDecimal(monto));
+        assertNotNull(cuenta.getSaldo());
+        assertTrue(cuenta.getSaldo().compareTo(BigDecimal.ZERO)>0);
+    }
+
+    static List<String> montoList() {
+    return Arrays.asList("100","200","300","500","1000","1000.12345");
+    }
 }
