@@ -8,10 +8,12 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.*;
 
 import java.math.BigDecimal;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -19,11 +21,17 @@ import static org.junit.jupiter.api.Assumptions.*;
 
 class CuentaTest {
     Cuenta cuenta;
+    private TestInfo testInfo; //para poder acceder a esta variable desde cualquier metodo, como un atributo
+    private TestReporter testReporter;
 
     @BeforeEach //antes de iniciar un metodo se ejecuta este
-    void initMetodoTest(){
+    void initMetodoTest(TestInfo testInfo, TestReporter testReporter){
         System.out.println("Iniciando metodo");
         this.cuenta = new Cuenta("Eduardo", new BigDecimal("1000.12345"));
+        this.testInfo= testInfo; //se realiza la inyeccion al metodo
+        this.testReporter= testReporter;
+        testReporter.publishEntry("Ejecutando: "+testInfo.getDisplayName() + " "+ testInfo.getTestMethod().orElse(null).getName()+
+                " con las etiquetas: "+ testInfo.getTags()); //imprime directamente desde el log de junit
     }
 
     @AfterEach //despues de cada metodo se ejecuta este
@@ -41,13 +49,17 @@ class CuentaTest {
         System.out.println("Finalizando el test");
     }
 
+    @Tag("cuenta") // desde barra de intelliJ se configura que se desea testear solo el tag correspondiente
     @Nested
     @DisplayName("probando atributos de cuenta")
     class CuentaTestNombreSaldo{
         @Test
         @DisplayName("el nombre")
         void testNombreCuenta() {
-
+            testReporter.publishEntry(testInfo.getTags().toString());
+            if(testInfo.getTags().contains("cuenta")){
+                testReporter.publishEntry("contiene etiqueta cuenta");
+            }
 //        cuenta.setPersona("Eduardo");
             String expected = "Eduardo";
             String actual = cuenta.getPersona();
@@ -79,6 +91,7 @@ class CuentaTest {
 
     @Nested
     class CuentaOperaciones{
+        @Tag("cuenta")
         @Test
         @DisplayName("probando debito (resta) de la cuenta")
         void testDebitoCuenta() {
@@ -89,6 +102,7 @@ class CuentaTest {
         }
 
         @Test
+        @Tag("cuenta")
         @DisplayName("probando credito (suma) de la cuenta")
         void testCreditoCuenta() {
             cuenta.credito(new BigDecimal("100"));
@@ -96,7 +110,8 @@ class CuentaTest {
             assertEquals(1100,cuenta.getSaldo().intValue());
             assertEquals("1100.12345", cuenta.getSaldo().toPlainString());
         }
-
+        @Tag("cuenta")
+        @Tag("banco")
         @Test
         void testTransferirDineroCuentas() {
             Cuenta cuenta1 = new Cuenta("John Doe", new BigDecimal("2500"));
@@ -111,6 +126,8 @@ class CuentaTest {
     }
 
     @Test
+    @Tag("cuenta")
+    @Tag("error")
     void testDineroInsuficienteExceptionCuenta() {
         // validar que se ejecuta la excepcion llamada directamente de su clase, expresión lambda para forzar error
         Exception exception =assertThrows(DineroInsuficienteException.class,()->{
@@ -121,10 +138,11 @@ class CuentaTest {
         assertEquals(esperado,actual);
     }
 
-
     @Test
     //@Disabled
     @DisplayName("probando relaciones entre cuentas y banco con assertAll")
+    @Tag("cuenta")
+    @Tag("banco")
     void testRelacionBancoCuentas() {
        // fail();
         Cuenta cuenta1 = new Cuenta("John Doe", new BigDecimal("2500"));
@@ -305,6 +323,7 @@ class CuentaTest {
         assertEquals("900.12345", cuenta.getSaldo().toPlainString());
     }
 
+    @Tag("param") // se aplica en toda la clase y sus metodos
     @Nested
     class PruebasParametrizadasTest{
 
@@ -358,6 +377,7 @@ class CuentaTest {
         }
     }
     //este metodo no puede integrarse en la clase pruebasparametrizadastest ya que la fuente es un metodo estatico y debe estar en la clase raiz
+    @Tag("param")
     @ParameterizedTest(name="num {index} ejecutando con valor {0} - {argumentsWithNames}") //validar muchos saldos mayor a 0
     @MethodSource("montoList") //unicamente el nombre del metodo
     void testDebitoCuentaMethodSource(String monto) { //aqui se inyecta cada valor del csv
@@ -369,4 +389,27 @@ class CuentaTest {
     static List<String> montoList() {
     return Arrays.asList("100","200","300","500","1000","1000.12345");
     }
+
+    @Nested
+    @Tag("timeout")
+    public class EjemploTimeOutTest{
+        @Test
+        @Timeout(4) //está en segundos
+        public void purebaTimeOut() throws InterruptedException {
+            TimeUnit.SECONDS.sleep(5); // asignando que tarda 6 segundos la tarea
+        }
+        @Test
+        @Timeout(value=5000, unit =TimeUnit.MILLISECONDS)
+        public void purebaTimeOut2() throws InterruptedException {
+            TimeUnit.MILLISECONDS.sleep(4000); // asignando que tarda 6 segundos la tarea
+        }
+
+        @Test
+        public void testTimeOut(){
+            assertTimeout(Duration.ofSeconds(5),()->{
+                TimeUnit.MILLISECONDS.sleep(4500);
+            });
+        }
+    }
+
 }

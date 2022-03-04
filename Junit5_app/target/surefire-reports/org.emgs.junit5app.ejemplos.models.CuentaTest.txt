@@ -1,0 +1,7 @@
+-------------------------------------------------------------------------------
+Test set: org.emgs.junit5app.ejemplos.models.CuentaTest
+-------------------------------------------------------------------------------
+Tests run: 3, Failures: 0, Errors: 1, Skipped: 0, Time elapsed: 12.636 s <<< FAILURE! - in org.emgs.junit5app.ejemplos.models.CuentaTest
+purebaTimeOut  Time elapsed: 4.025 s  <<< ERROR!
+java.util.concurrent.TimeoutException: purebaTimeOut() timed out after 4 seconds
+

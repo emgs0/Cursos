@@ -7,11 +7,30 @@
     <groupId>org.emgs.junitapp.example</groupId>
     <artifactId>Junit5_app</artifactId>
     <version>1.0-SNAPSHOT</version>
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>2.22.2</version>
+                <!--configuration>
+                    <groups>timeout</groups>
+                    *ESTA CONFIGURACION SIRVE PARA EJECUTAR UNICAMENTE LOS TAGS
+                </configuration-->
+            </plugin>
+        </plugins>
+    </build>
     <dependencies>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>5.8.2</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>3.0.0-M5</version>
+            <type>maven-plugin</type>
         </dependency>
     </dependencies>
 
